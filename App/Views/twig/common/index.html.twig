@@ -1,0 +1,289 @@
+{% extends "base.html.twig" %}
+
+
+{% block title %}Главная{% endblock %}
+
+
+{% block header %}
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            {% if user.id %}
+                <a class="navbar-brand btn btn-outline-secondary" href="{{ index_file }}?action=logout">Выйти</a>
+                <span class="badge badge-info">{{ user.name }}</span>
+            {% else %}
+                <a class="navbar-brand btn btn-outline-secondary" href="{{ index_file }}?action=login">Вход</a>
+                <span class="badge badge-info">Гость</span>
+            {% endif %}
+        </div>
+    </nav>
+
+{% endblock %}
+
+
+{% block content %}
+
+    {% set createTaskForm %}
+        <div class="form-row">
+            <div class="col-md-6 mb-4">
+                <label for="validationUsername">Имя пользователя</label>
+                <input class="form-control" id="validationUsername" type="text" name="author" placeholder="Имя пользователя" value="{{ user.name }}" required>
+                <div class="invalid-feedback">Необходимо ввести имя пользователя</div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <label for="validationEmail">Электронная почта</label>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">@</span>
+                    </div>
+                    <input class="form-control" id="validationEmail" type="email" name="email" placeholder="Email" required>
+                    <div class="invalid-feedback">Необходимо ввести email в формате <b>email@example.com</b></div>
+                </div>
+            </div>
+        </div>
+        <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Описание</span>
+            </div>
+            <textarea name="content" class="form-control" id="validationDefault03" aria-label="With textarea" required></textarea>
+            <div class="invalid-feedback">Необходимо ввести описание задачи</div>
+        </div>
+        <br>
+        <button class="btn btn-success" type="submit">Создать</button>
+    {% endset %}
+
+
+    <div style="border-bottom: 1px solid lightgray;">
+        <div style="padding-bottom: 10px; display: flex; justify-content: space-between;">
+            <h3 class="nav-item">Задачи:</h3>
+            {% if allTasks %}
+            <ul class="nav justify-content-end">
+                <li class="nav-item">
+                    {% if sortDirection == 'DESC' and sortBy == 'author' %}
+                        <a class="nav-link" href="{{ index_file }}?order=author&direct=ASC">По имени &#8593;</a>
+                    {% else %}
+                        <a class="nav-link" href="{{ index_file }}?order=author&direct=DESC">По имени &#8595;</a>
+                    {% endif %}
+                </li>
+                <li class="nav-item">
+                    {% if sortDirection == 'DESC' and sortBy == 'email' %}
+                        <a class="nav-link" href="{{ index_file }}?order=email&direct=ASC">По email &#8593;</a>
+                    {% else %}
+                        <a class="nav-link" href="{{ index_file }}?order=email&direct=DESC">По email &#8595;</a>
+                    {% endif %}
+                </li>
+                <li class="nav-item">
+                    {% if sortDirection == 'DESC' and sortBy == 'is_done' %}
+                        <a class="nav-link" href="{{ index_file }}?order=status&direct=ASC">По статусу &#8593;</a>
+                    {% else %}
+                        <a class="nav-link" href="{{ index_file }}?order=status&direct=DESC">По статусу &#8595;</a>
+                    {% endif %}
+                </li>
+            </ul>
+            {% endif %}
+        </div>
+        {% if msg %}<div class="alert alert-success" style="margin-top: 20px;">{{ msg }}</div>{% endif %}
+    </div>
+
+
+    {% if allTasks %}
+        <br>
+        <div class="card-body text-center">
+            <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapseExample">Новая задача</button>
+        </div>
+        <div class="collapse card-body" id="collapseExample">
+            <form class="needs-validation" novalidate action="{{ index_file }}?action=create" method="post">
+                {{ createTaskForm }}
+            </form>
+        </div>
+        <br>
+
+
+        {% if allTasks|length > 1 %}
+            <div class="pagination">
+                <div class="list-group" id="list-tab" style="flex-direction: row;">
+                    <a class="list-group-item list-group-item-action active" style="border-radius: 4px;" data-toggle="list" href="#page-1" role="tab">1</a>
+                    {% for page in 2..allTasks|length %}
+                        <a class="list-group-item list-group-item-action" style="border-radius: 4px;" data-toggle="list" href="#page-{{ loop.index + 1 }}" role="tab">{{ loop.index + 1 }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            <br>
+        {% endif %}
+
+
+        <div class="card">
+            <div class="tab-content">
+                {% for page in allTasks %}
+
+                    {% if loop.first == true %}
+
+                        <div class="tab-pane fade show active" id="page-1">
+                            {% for task in page %}
+                                <div class="card-body" style="padding: 20px 35px;">
+
+
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <div>
+                                            <h5 class="card-title" style="float: left; line-height: 1em;">{{ task.author }}</h5>&nbsp;
+                                            <span class="card-text text-muted">({{ task.email }})</span>
+                                        </div>
+                                        <p class="card-text">Статус:&nbsp;
+                                            {% if task.is_done %}
+                                                <span style="color: forestgreen">Выполнено</span>
+                                            {% else %}
+                                                <span style="color: darkred">Не выполнено</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    <p class="card-text">{{ task.content|nl2br }}</p>
+                                    {% if task.updated_at %}<p class="card-text"><small class="text-muted">Отредактировано администратором</small></p>{% endif %}
+
+
+                                    {% if isAdmin %}
+
+                                        <button class="btn btn-primary" data-toggle="collapse" data-target="#collapseTask_{{ task.id }}">Редактировать</button>
+                                        <div class="collapse" id="collapseTask_{{ task.id }}">
+                                            <br>
+                                            <form class="needs-validation" novalidate action="{{ index_file }}?action=edit" method="post">
+                                                <div class="form-row">
+                                                    <div class="col-md-6 mb-4">
+                                                        <label for="validationUsername_{{ task.id }}">Имя пользователя</label>
+                                                        <input class="form-control" id="validationUsername_{{ task.id }}" type="text" name="author" placeholder="Имя пользователя" value="{{ task.author }}" required>
+                                                        <div class="invalid-feedback">Необходимо ввести имя пользователя</div>
+                                                    </div>
+                                                    <div class="col-md-6 mb-4">
+                                                        <label for="validationEmail_{{ task.id }}">Электронная почта</label>
+                                                        <input class="form-control" id="validationEmail_{{ task.id }}" type="email" name="email" placeholder="Email" value="{{ task.email }}" required>
+                                                        <div class="invalid-feedback">Необходимо ввести email в формате <b>email@example.com</b></div>
+                                                    </div>
+                                                </div>
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text">Описание</span>
+                                                    </div>
+                                                    <textarea class="form-control" id="validationContent_{{ task.id }}" name="content" required>{{ task.content }}</textarea>
+                                                    <div class="invalid-feedback">Необходимо ввести описание задачи</div>
+                                                </div>
+                                                <div style="visibility: hidden"><input type="text" name="id" value="{{ task.id }}"></div>
+                                                <br>
+                                                <button class="btn btn-success" type="submit">Сохранить изменения</button>
+                                            </form>
+                                            <form action="{{ index_file }}?action=changeStatus" method="post">
+                                                <div style="visibility: hidden">
+                                                    <input type="text" name="id" value="{{ task.id }}">
+                                                    <input type="text" name="status" value="{{ task.is_done }}">
+                                                </div>
+                                                {% if task.is_done %}
+                                                    <button type="submit" class="btn btn-outline-success">Выполнено</button>
+                                                {% else %}
+                                                    <button type="submit" class="btn btn-success">Выполнить</button>
+                                                {% endif %}
+                                            </form>
+                                        </div>
+
+                                    {% endif %}
+                                    <hr>
+
+
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                    {% elseif allTasks|length > 1 %}
+
+                        <div class="tab-pane fade show" id="page-{{ loop.index }}" role="tabpanel" aria-labelledby="list-home-list">
+                            {% for task in page %}
+                                <div class="card-body" style="padding: 20px 35px;">
+
+
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <div>
+                                            <h5 class="card-title" style="float: left; line-height: 1em;">{{ task.author }}</h5>&nbsp;
+                                            <span class="card-text text-muted">({{ task.email }})</span>
+                                        </div>
+                                        <p class="card-text">Статус:&nbsp;
+                                            {% if task.is_done %}
+                                                <span style="color: forestgreen">Выполнено</span>
+                                            {% else %}
+                                                <span style="color: darkred">Не выполнено</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    <p class="card-text">{{ task.content|nl2br }}</p>
+                                    {% if task.updated_at %}<p class="card-text"><small class="text-muted">Отредактировано администратором</small></p>{% endif %}
+
+
+                                    {% if isAdmin %}
+
+                                        <button class="btn btn-primary" data-toggle="collapse" data-target="#collapseTask_{{ task.id }}">Редактировать</button>
+                                        <div class="collapse" id="collapseTask_{{ task.id }}">
+                                            <br>
+                                            <form class="needs-validation" novalidate action="{{ index_file }}?action=edit" method="post">
+                                                <div class="form-row">
+                                                    <div class="col-md-6 mb-4">
+                                                        <label for="validationUsername_{{ task.id }}">Имя пользователя</label>
+                                                        <input class="form-control" id="validationUsername_{{ task.id }}" type="text" name="author" placeholder="Имя пользователя" value="{{ task.author }}" required>
+                                                        <div class="invalid-feedback">Необходимо ввести имя пользователя</div>
+                                                    </div>
+                                                    <div class="col-md-6 mb-4">
+                                                        <label for="validationEmail_{{ task.id }}">Электронная почта</label>
+                                                        <input class="form-control" id="validationEmail_{{ task.id }}" type="email" name="email" placeholder="Email" value="{{ task.email }}" required>
+                                                        <div class="invalid-feedback">Необходимо ввести email в формате <b>email@example.com</b></div>
+                                                    </div>
+                                                </div>
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text">Описание</span>
+                                                    </div>
+                                                    <textarea class="form-control" id="validationContent_{{ task.id }}" name="content" required>{{ task.content }}</textarea>
+                                                    <div class="invalid-feedback">Необходимо ввести описание задачи</div>
+                                                </div>
+                                                <div style="visibility: hidden"><input type="text" name="id" value="{{ task.id }}"></div>
+                                                <br>
+                                                <button class="btn btn-success" type="submit">Сохранить изменения</button>
+                                            </form>
+                                            <form action="{{ index_file }}?action=changeStatus" method="post">
+                                                <div style="visibility: hidden">
+                                                    <input type="text" name="id" value="{{ task.id }}">
+                                                    <input type="text" name="status" value="{{ task.is_done }}">
+                                                </div>
+                                                {% if task.is_done %}
+                                                    <button type="submit" class="btn btn-outline-success">Выполнено</button>
+                                                {% else %}
+                                                    <button type="submit" class="btn btn-success">Выполнить</button>
+                                                {% endif %}
+                                            </form>
+                                        </div>
+
+                                    {% endif %}
+                                    <hr>
+
+
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                    {% endif %}
+
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <br>
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="card-title">Доска задач пуста</h5>
+                <p class="card-text">Чтобы создать новую задачу, заполните поля и нажмите на кнопку "Создать"</p>
+
+                <button class="btn btn-primary" style="margin: 0 auto;" type="button" data-toggle="collapse" data-target="#collapseExample">Новая задача</button>
+            </div>
+            <div class="collapse card-body" id="collapseExample">
+                <form class="needs-validation" novalidate action="{{ index_file }}?action=create" method="post">
+                    {{ createTaskForm }}
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+{% endblock %}
